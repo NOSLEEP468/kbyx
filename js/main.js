@@ -98,9 +98,9 @@ function joyEnd() {
 stage.addEventListener('pointerdown', (e) => {
   if (state !== 'playing') return;
   const x = e.clientX, y = e.clientY;
-  if (x < window.innerWidth * 0.44 && !joy.active && look.id === null) {
-    joyStart(x, y, e.pointerId);
-  } else if (look.id === null && !joy.active) {
+  if (x < window.innerWidth * 0.44) {
+    if (!joy.active) joyStart(x, y, e.pointerId);
+  } else if (look.id === null) {
     look.active = true; look.id = e.pointerId; look.lx = x; look.ly = y;
   }
 });
@@ -142,7 +142,11 @@ window.addEventListener('mousemove', (e) => {
 
 // ---------------- 按钮 ----------------
 function bindPress(el, onDown, onUp) {
-  el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); onDown && onDown(); });
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    try { el.setPointerCapture(e.pointerId); } catch (err) { /* 合成事件没有真实指针 */ }
+    onDown && onDown();
+  });
   el.addEventListener('pointerup', (e) => { e.preventDefault(); e.stopPropagation(); onUp && onUp(); });
   el.addEventListener('pointerleave', () => { onUp && onUp(); });
   el.addEventListener('pointercancel', () => { onUp && onUp(); });
@@ -325,14 +329,15 @@ let sampleReq = false, sampleVal = -1;
 function update(dt) {
   elapsed += dt;
 
-  // 键鼠输入（桌面端）
+  // 键鼠输入（桌面端）；摇杆在用时不覆盖摇杆的方向
   if (!joy.active) {
     const kx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
     const ky = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
     input.moveX = kx;
     input.moveY = ky;
-    input.sprint = runHeld || keys.has('ShiftLeft') || keys.has('ShiftRight');
   }
+  // 跑：按钮和对键盘都算，与摇杆无关
+  input.sprint = runHeld || keys.has('ShiftLeft') || keys.has('ShiftRight');
 
   player.update(dt, input, maze, (sprint) => audio.footstep(sprint));
 
@@ -475,6 +480,52 @@ setScreen('title');
 animate();
 
 
+
+// ---------------- 触摸输入自检（多点触控 + 跑） ----------------
+function runInputTest() {
+  const out = [];
+  const ok = (n, c, x) => out.push((c ? 'PASS ' : 'FAIL ') + n + (x !== undefined ? ' [' + x + ']' : ''));
+  const prevState = state, prevYaw = player.yaw;
+  state = 'playing';
+  const W = window.innerWidth, H = window.innerHeight;
+  const fire = (el, type, x, y, id) => el.dispatchEvent(new PointerEvent(type, {
+    clientX: x, clientY: y, pointerId: id, bubbles: true, cancelable: true, isPrimary: id === 101,
+  }));
+
+  fire(stage, 'pointerdown', Math.round(W * 0.15), Math.round(H * 0.7), 101);
+  ok('joystick-starts', joy.active === true);
+  fire(window, 'pointermove', Math.round(W * 0.15), Math.round(H * 0.5), 101);
+  ok('joystick-pushes-forward', input.moveY > 0.4, input.moveY.toFixed(2));
+
+  fire(stage, 'pointerdown', Math.round(W * 0.8), Math.round(H * 0.5), 102);
+  ok('look-starts-while-joystick', look.id === 102, String(look.id));
+  fire(window, 'pointermove', Math.round(W * 0.8) + 130, Math.round(H * 0.5), 102);
+  ok('look-rotates-while-joystick', Math.abs(player.yaw - prevYaw) > 0.1, (player.yaw - prevYaw).toFixed(3));
+
+  const rb = $('btn-run');
+  fire(rb, 'pointerdown', 0, 0, 103);
+  ok('run-button-holds', runHeld === true);
+  update(1 / 60);
+  ok('sprint-while-moving', input.sprint === true, String(input.sprint));
+  ok('player-actually-runs', player.sprinting === true, String(player.sprinting));
+
+  fire(window, 'pointerup', 0, 0, 103);
+  fire(window, 'pointerup', 0, 0, 102);
+  fire(window, 'pointerup', 0, 0, 101);
+  ok('release-clears-all', joy.active === false && look.id === null && runHeld === false,
+    `joy=${joy.active} look=${look.id} run=${runHeld}`);
+
+  input.moveX = 0; input.moveY = 0; input.sprint = false;
+  player.sprinting = false;
+  player.yaw = prevYaw;
+  state = prevState;
+  hud.classList.add('hidden');
+  setScreen('title');
+  try { fetch('/inputreport?' + encodeURIComponent(out.join(' | '))); } catch (e) {}
+  dbgEl.textContent = '=== INPUT TEST ===\n' + out.join('\n');
+  document.title = out.some(l => l.startsWith('FAIL')) ? 'FAIL' : 'ALLPASS';
+}
+
 // ---------------- 诊断面板 / 自检 ----------------
 const params = new URLSearchParams(location.search);
 const dbgEl = $('debug');
@@ -591,4 +642,7 @@ if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
 const isLocalHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 if (params.has('selftest') || isLocalHost) {
   setTimeout(runSelftest, 900);
+}
+if (params.has('inputtest') || location.hash === '#it') {
+  setTimeout(runInputTest, 1200);
 }
