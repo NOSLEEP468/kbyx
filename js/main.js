@@ -325,14 +325,12 @@ let sampleReq = false, sampleVal = -1;
 function update(dt) {
   elapsed += dt;
 
-  // 键鼠输入
-  if (keys.size) {
+  // 键鼠输入（桌面端）
+  if (!joy.active) {
     const kx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
     const ky = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
-    if (kx || ky) { input.moveX = kx; input.moveY = ky; }
-    else if (!joy.active) { input.moveX = 0; input.moveY = 0; }
-  }
-  if (!joy.active) {
+    input.moveX = kx;
+    input.moveY = ky;
     input.sprint = runHeld || keys.has('ShiftLeft') || keys.has('ShiftRight');
   }
 
