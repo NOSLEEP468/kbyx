@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>长廊 · 三支蜡烛</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/icon.svg" />
+<link rel="stylesheet" href="css/style.css" />
+<script>
+  window.__errs = [];
+  addEventListener('error', function (e) { window.__errs.push('error: ' + (e.message || e.type)); });
+  addEventListener('unhandledrejection', function (e) { window.__errs.push('reject: ' + ((e.reason && e.reason.message) || e.reason)); });
+</script>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- 触摸层：左半边摇杆，右半边转视角 -->
+  <div id="stage"></div>
+
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div id="candle-hud" class="candles">
+        <span class="candle" data-i="0">🕯</span>
+        <span class="candle" data-i="1">🕯</span>
+        <span class="candle" data-i="2">🕯</span>
+      </div>
+      <div id="objective">找到三支蜡烛</div>
+    </div>
+
+    <div id="stamina-wrap"><div id="stamina"></div></div>
+
+    <div id="compass" class="hidden"><div id="compass-arrow">▲</div><span id="compass-text">蜡烛</span></div>
+
+    <div id="joystick" class="hidden">
+      <div id="stick-base"><div id="stick-knob"></div></div>
+    </div>
+
+    <div class="actions">
+      <button id="btn-hint" class="vbtn small" aria-label="指引">⌖</button>
+      <button id="btn-flash" class="vbtn small" aria-label="手电">🔦</button>
+      <button id="btn-run" class="vbtn" aria-label="跑">跑</button>
+      <button id="btn-use" class="vbtn accent" aria-label="拾取">拾</button>
+    </div>
+
+    <button id="btn-pause" class="vbtn tiny" aria-label="暂停">❚❚</button>
+    <div id="toast"></div>
+  </div>
+
+  <div id="screen-title" class="screen">
+    <div class="panel">
+      <h1>长 廊</h1>
+      <p class="sub">三支蜡烛，一扇门。别让它听见你。</p>
+      <div class="howto">
+        <div><b>左半屏</b> 拖动 = 移动</div>
+        <div><b>右半屏</b> 滑动 = 转头</div>
+        <div><b>跑</b> 快，但会喘，也会被听见</div>
+        <div><b>拾</b> 靠近蜡烛时捡起</div>
+      </div>
+      <button id="btn-start" class="primary">开 始</button>
+      <p class="tip">建议横屏、戴耳机。手机里打开「自动旋转」。</p>
+    </div>
+  </div>
+
+  <div id="screen-dead" class="screen hidden">
+    <div class="panel dead">
+      <h2>它 抓 到 你 了</h2>
+      <p class="sub" id="dead-sub">蜡烛还留在原地。</p>
+      <button id="btn-retry" class="primary">再 来</button>
+    </div>
+  </div>
+
+  <div id="screen-win" class="screen hidden">
+    <div class="panel win">
+      <h2>你 出 来 了</h2>
+      <p class="sub" id="win-sub"></p>
+      <button id="btn-again" class="primary">再 玩 一 次</button>
+    </div>
+  </div>
+
+  <div id="screen-pause" class="screen hidden">
+    <div class="panel">
+      <h2>暂 停</h2>
+      <p class="sub">长廊在等你。</p>
+      <button id="btn-resume" class="primary">继 续</button>
+      <button id="btn-restart" class="ghost">重新开始</button>
+      <button id="btn-sound" class="ghost">声音：开</button>
+    </div>
+  </div>
+
+  <pre id="debug" class="hidden"></pre>
+
+  <div id="rotate-hint">
+    <div class="rot-icon">⟳</div>
+    <p>请横屏握持手机</p>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "长廊 · 三支蜡烛",
+  "short_name": "长廊",
+  "description": "第一人称 3D 恐怖迷宫：找三支蜡烛，逃出长廊。",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
