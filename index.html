@@ -10,14 +10,14 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="assets/icon.svg" />
-<link rel="stylesheet" href="css/style.css?v=5" />
+<link rel="stylesheet" href="css/style.css?v=6" />
 <script>
   window.__errs = [];
   addEventListener('error', function (e) { window.__errs.push('error: ' + (e.message || e.type)); });
   addEventListener('unhandledrejection', function (e) { window.__errs.push('reject: ' + ((e.reason && e.reason.message) || e.reason)); });
 </script>
 <script type="importmap">
-{ "imports": { "three": "./vendor/three.module.js?v=5" } }
+{ "imports": { "three": "./vendor/three.module.js?v=6" } }
 </script>
 </head>
 <body>
@@ -69,6 +69,10 @@
         <div><b>跑</b> 快，但会喘，也会被听见</div>
         <div><b>拾</b> 靠近蜡烛时捡起</div>
       </div>
+      <div class="diff" id="diff-row">
+        <button class="diff-btn" data-diff="normal">普 通</button>
+        <button class="diff-btn" data-diff="nightmare">噩 梦</button>
+      </div>
       <button id="btn-start" class="primary">开 始</button>
       <p class="tip">建议横屏、戴耳机。手机里打开「自动旋转」。</p>
     </div>
@@ -108,6 +112,6 @@
     <p>请横屏握持手机</p>
   </div>
 </div>
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>

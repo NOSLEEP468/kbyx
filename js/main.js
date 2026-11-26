@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { generateMaze, mulberry32, cellToWorld, worldToCell, isWall, openCells, bfsPath } from './maze.js?v=5';
-import { buildWorld } from './world.js?v=5';
-import { Player } from './player.js?v=5';
-import { Monster } from './monster.js?v=5';
-import { AudioEngine } from './audio.js?v=5';
+import { generateMaze, mulberry32, cellToWorld, worldToCell, isWall, openCells, bfsPath } from './maze.js?v=6';
+import { buildWorld } from './world.js?v=6';
+import { Player } from './player.js?v=6';
+import { Monster } from './monster.js?v=6';
+import { AudioEngine } from './audio.js?v=6';
 
 const $ = (id) => document.getElementById(id);
 
@@ -38,7 +38,23 @@ const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerH
 
 const audio = new AudioEngine();
 
+// 难度：普通 / 噩梦。噩梦更小更快、更早发现你、体力更紧
+const DIFFS = {
+  normal: {
+    label: '普通', maze: 17, spawn: 19, speed: 3.15, speedPerCandle: 0.28,
+    sight: 12, hear: 20, patrolBias: 0.7, sprint: 4.5, drain: 28,
+  },
+  nightmare: {
+    label: '噩梦', maze: 19, spawn: 11, speed: 3.5, speedPerCandle: 0.38,
+    sight: 15, hear: 26, patrolBias: 0.92, sprint: 4.15, drain: 34,
+  },
+};
+let difficulty = 'normal';
+try { difficulty = localStorage.getItem('kbyx-diff') === 'nightmare' ? 'nightmare' : 'normal'; } catch (e) {}
+const diffCfg = () => DIFFS[difficulty];
+
 let world, maze, player, monster;
+let builtDiff = null;
 let startPos = new THREE.Vector3();
 let startYaw = 0;
 let state = 'title';
@@ -160,8 +176,12 @@ bindPress($('btn-run'), () => { runHeld = true; $('btn-run').classList.add('pres
 bindPress($('btn-use'), () => tryPickup());
 bindPress($('btn-flash'), () => toggleFlash());
 
-let hintT = 0;
-bindPress($('btn-hint'), () => { hintT = 4.2; $('compass').classList.remove('hidden'); });
+let hintT = 0, hintCd = 0;
+bindPress($('btn-hint'), () => {
+  if (hintCd > 0) { toast(`还要 ${Math.ceil(hintCd)} 秒`, 900); return; }
+  hintT = 4.2; hintCd = 11;
+  $('compass').classList.remove('hidden');
+});
 
 function toggleFlash() {
   const on = player.toggleFlashlight();
@@ -205,7 +225,9 @@ function tryPickup() {
     world.exit.unlocked = true;
     audio.unlock();
     $('objective').textContent = '出口开了 · 找到绿光';
-    toast('远处有门开了……它在朝你过来', 3200);
+    monster.forceHunt(player.pos);
+    toast('门开了……它现在知道你在哪', 3200);
+    audio.stinger();
   } else {
     $('objective').textContent = `还需要 ${3 - candlesTaken} 支蜡烛`;
     toast(`拿起了蜡烛 ${candlesTaken}/3`);
@@ -242,7 +264,9 @@ function retry() {
   setScreen(null);
   hud.classList.remove('hidden');
   player.respawn(startPos, startYaw);
-  monster.spawnFarFrom(startPos, 16);
+  player.runSpeed = diffCfg().sprint;
+  player.drain = diffCfg().drain;
+  monster.spawnFarFrom(startPos, diffCfg().spawn);
   monster.setDifficulty(candlesTaken);
   // 死亡后清空追逐记忆
   monster.state = 'patrol';
@@ -280,6 +304,11 @@ function resetRun() {
   monster.setDifficulty(0);
   monster.patrolTarget = null;
   monster.lastSeen = null;
+  monster.relentless = false;
+  player.runSpeed = diffCfg().sprint;
+  player.drain = diffCfg().drain;
+  hintT = 0; hintCd = 0;
+  $('compass').classList.add('hidden');
   audio.setTension(0);
 }
 
@@ -330,6 +359,15 @@ $('btn-sound').addEventListener('click', () => {
   audio.setMuted(!audio.muted);
   $('btn-sound').textContent = '声音：' + (audio.muted ? '关' : '开');
 });
+document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === difficulty));
+document.querySelectorAll('.diff-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    difficulty = btn.dataset.diff;
+    try { localStorage.setItem('kbyx-diff', difficulty); } catch (e) {}
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+
 $('btn-retry').addEventListener('click', retry);
 $('btn-again').addEventListener('click', () => location.reload());
 
@@ -338,7 +376,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 // ---------------- 初始化世界 ----------------
 function buildWorldOnce(seed) {
   const rand = mulberry32(seed);
-  maze = generateMaze(15, 15, rand);
+  builtDiff = difficulty;
+  maze = generateMaze(diffCfg().maze, diffCfg().maze, rand);
   scene.clear();
   scene.add(camera);
   world = buildWorld(scene, maze, rand);
@@ -351,8 +390,8 @@ function buildWorldOnce(seed) {
   }
   player.respawn(startPos, startYaw);
 
-  monster = new Monster(scene, maze, rand);
-  monster.spawnFarFrom(startPos, 15);
+  monster = new Monster(scene, maze, rand, diffCfg());
+  monster.spawnFarFrom(startPos, diffCfg().spawn);
   monster.onStep = (dist, hunting) => audio.monsterStep(dist, hunting);
   monster.onSpot = () => {
     audio.stinger();
@@ -409,6 +448,7 @@ function update(dt) {
   $('btn-use').style.boxShadow = nearCandle ? '0 0 22px rgba(255,190,90,0.75)' : 'none';
 
   // 指南针
+  if (hintCd > 0) hintCd -= dt;
   if (hintT > 0) {
     hintT -= dt;
     if (hintT <= 0) $('compass').classList.add('hidden');
@@ -516,6 +556,7 @@ $('btn-start').addEventListener('click', async () => {
   await enterImmersive();
   audio.init();
   audio.resume();
+  if (builtDiff !== difficulty) buildWorldOnce((Date.now() ^ 0x9e3779b9) >>> 0);
   setScreen(null);
   hud.classList.remove('hidden');
   $('joystick').classList.remove('hidden');
@@ -656,7 +697,9 @@ function runSelftest() {
 
   // 复位
   player.respawn(startPos, startYaw);
-  monster.spawnFarFrom(startPos, 16);
+  player.runSpeed = diffCfg().sprint;
+  player.drain = diffCfg().drain;
+  monster.spawnFarFrom(startPos, diffCfg().spawn);
 
   const info = renderer.info.render;
   ok('draw-calls', info.calls > 0 && info.calls < 120, info.calls);

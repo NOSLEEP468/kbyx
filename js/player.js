@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resolveCircle } from './maze.js?v=5';
+import { resolveCircle } from './maze.js?v=6';
 
 export class Player {
   constructor(camera, scene) {
@@ -11,7 +11,8 @@ export class Player {
     this.radius = 0.33;
     this.eye = 1.62;
     this.walkSpeed = 2.75;
-    this.runSpeed = 4.6;
+    this.runSpeed = 4.5;
+    this.drain = 28;
     this.stamina = 100;
     this.maxStamina = 100;
     this.exhausted = false;
@@ -112,7 +113,7 @@ export class Player {
 
     // 体力
     if (this.sprinting) {
-      this.stamina -= 26 * dt;
+      this.stamina -= this.drain * dt;
       if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; }
     } else {
       this.stamina = Math.min(this.maxStamina, this.stamina + (this.exhausted ? 12 : 20) * dt);

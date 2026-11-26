@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CELL, WALL_H, cellToWorld, isWall, openCells } from './maze.js?v=5';
+import { CELL, WALL_H, cellToWorld, isWall, openCells } from './maze.js?v=6';
 
 function noiseCanvas(size, base, specks, opacity) {
   const cv = document.createElement('canvas');
@@ -274,7 +274,7 @@ export function buildWorld(scene, maze, rand) {
       const w = cellToWorld(maze, cell[0], cell[1]);
       const dStart = Math.hypot(w.x - start.x, w.z - start.z);
       const dExit = Math.hypot(w.x - exitPos.x, w.z - exitPos.z);
-      if (dStart > 8 && dExit > 6 && !candles.some(k => Math.hypot(k.pos.x - w.x, k.pos.z - w.z) < 7)) { pick = cell; break; }
+      if (dStart > 13 && dExit > 8 && !candles.some(k => Math.hypot(k.pos.x - w.x, k.pos.z - w.z) < 11)) { pick = cell; break; }
     }
     if (!pick) pick = cShuffled[i * 7 % cShuffled.length];
     const w = cellToWorld(maze, pick[0], pick[1]);

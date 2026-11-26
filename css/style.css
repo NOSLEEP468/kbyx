@@ -130,6 +130,16 @@ canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: 
   margin: 18px 0 4px; font-size: 12px; color: #b7afa2; text-align: left;
 }
 .howto b { color: #f0dfc2; font-weight: 600; }
+.diff { display: flex; gap: 8px; margin-top: 18px; }
+.diff-btn {
+  flex: 1; padding: 10px 0; border-radius: 10px; font-size: 13px; letter-spacing: 1px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #b7afa2;
+  touch-action: manipulation;
+}
+.diff-btn.active {
+  background: linear-gradient(180deg, #5b3f27, #392617);
+  border-color: rgba(240,200,140,0.5); color: #f4e7d2;
+}
 .primary {
   margin-top: 20px; width: 100%; padding: 15px 0; border: none; border-radius: 12px;
   font-size: 17px; font-weight: 700; letter-spacing: 3px; color: #1a1410;

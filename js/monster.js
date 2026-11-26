@@ -1,9 +1,11 @@
 import * as THREE from 'three';
-import { bfsPath, cellToWorld, hasLineOfSight, worldToCell, openCells, CELL } from './maze.js?v=5';
+import { bfsPath, cellToWorld, hasLineOfSight, worldToCell, openCells, CELL } from './maze.js?v=6';
 
 export class Monster {
-  constructor(scene, maze, rand) {
+  constructor(scene, maze, rand, cfg) {
     this.maze = maze;
+    this.cfg = cfg || { sight: 12, hear: 20, patrolBias: 0.7, speed: 3.15, speedPerCandle: 0.28, spawn: 18 };
+    this.relentless = false;
     this.rand = rand;
     this.pos = new THREE.Vector3();
     this.state = 'patrol';
@@ -84,7 +86,17 @@ export class Monster {
   }
 
   setDifficulty(candlesTaken) {
-    this.speedBonus = candlesTaken * 0.22;
+    this.speedBonus = candlesTaken * this.cfg.speedPerCandle;
+  }
+
+  // 出口打开后，它就一直知道你在哪——最后的追逐不再靠运气
+  forceHunt(pos) {
+    this.relentless = true;
+    this.state = 'hunt';
+    this.alerted = true;
+    this.lastSeen = pos.clone();
+    this.loseT = 0;
+    this.repathT = 0;
   }
 
   spawnFarFrom(point, minDist) {
@@ -115,12 +127,12 @@ export class Monster {
   pickPatrolTarget(player) {
     const cells = openCells(this.maze);
     // 大部分时候在玩家附近游荡，偶尔远处重新布点——这样既像在找你，又不会贴脸
-    if (player && this.rand() < 0.62) {
+    if (player && this.rand() < this.cfg.patrolBias) {
       const near = [];
       for (const cell of cells) {
         const w = cellToWorld(this.maze, cell[0], cell[1]);
         const d = Math.hypot(w.x - player.pos.x, w.z - player.pos.z);
-        if (d > 5 && d < 14) near.push(cell);
+        if (d > 4 && d < 13) near.push(cell);
       }
       if (near.length) return near[(this.rand() * near.length) | 0];
     }
@@ -129,7 +141,7 @@ export class Monster {
 
   canSee(player) {
     const d = this.pos.distanceTo(player.pos);
-    if (d > 11) return false;
+    if (d > this.cfg.sight) return false;
     const dc = worldToCell(this.maze, this.pos.x, this.pos.z);
     const pc = worldToCell(this.maze, player.pos.x, player.pos.z);
     return hasLineOfSight(this.maze, [dc.c, dc.r], [pc.c, pc.r]);
@@ -137,8 +149,8 @@ export class Monster {
 
   hears(player) {
     const d = this.pos.distanceTo(player.pos);
-    if (d > 16) return false;
-    return player.sprinting || (d < 7 && Math.hypot(player.vel.x, player.vel.z) > 1.2);
+    if (d > this.cfg.hear) return false;
+    return player.sprinting || (d < 9 && Math.hypot(player.vel.x, player.vel.z) > 1.2);
   }
 
   update(dt, player, t) {
@@ -161,7 +173,11 @@ export class Monster {
       this.alerted = true;
     }
 
-    if (this.state === 'hunt') {
+    if (this.relentless && !player.dead) {
+      this.state = 'hunt';
+      this.lastSeen = player.pos.clone();
+      this.loseT = 0;
+    } else if (this.state === 'hunt') {
       this.loseT += dt;
       if (!sees && this.loseT > 3.2) {
         this.state = 'search';
@@ -178,15 +194,15 @@ export class Monster {
     if (this.state === 'hunt') {
       target = worldToCell(this.maze, player.pos.x, player.pos.z);
       target = [target.c, target.r];
-      this.speed = 3.05 + this.speedBonus;
+      this.speed = this.cfg.speed + this.speedBonus + (this.relentless ? 0.25 : 0);
     } else if (this.state === 'search' && this.lastSeen) {
       const tc = worldToCell(this.maze, this.lastSeen.x, this.lastSeen.z);
       target = [tc.c, tc.r];
-      this.speed = 2.15 + this.speedBonus * 0.5;
+      this.speed = 2.35 + this.speedBonus * 0.5;
     } else {
       if (!this.patrolTarget) this.patrolTarget = this.pickPatrolTarget(player);
       target = this.patrolTarget;
-      this.speed = 1.25 + this.speedBonus * 0.3;
+      this.speed = 1.55 + this.speedBonus * 0.3;
     }
 
     // —— 寻路 ——
