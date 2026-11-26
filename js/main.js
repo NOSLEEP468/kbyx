@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { generateMaze, mulberry32, cellToWorld, worldToCell, isWall, openCells, bfsPath } from './maze.js';
-import { buildWorld } from './world.js';
-import { Player } from './player.js';
-import { Monster } from './monster.js';
-import { AudioEngine } from './audio.js';
+import { generateMaze, mulberry32, cellToWorld, worldToCell, isWall, openCells, bfsPath } from './maze.js?v=5';
+import { buildWorld } from './world.js?v=5';
+import { Player } from './player.js?v=5';
+import { Monster } from './monster.js?v=5';
+import { AudioEngine } from './audio.js?v=5';
 
 const $ = (id) => document.getElementById(id);
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resolveCircle } from './maze.js';
+import { resolveCircle } from './maze.js?v=5';
 
 export class Player {
   constructor(camera, scene) {

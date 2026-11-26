@@ -10,14 +10,14 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="assets/icon.svg" />
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css?v=5" />
 <script>
   window.__errs = [];
   addEventListener('error', function (e) { window.__errs.push('error: ' + (e.message || e.type)); });
   addEventListener('unhandledrejection', function (e) { window.__errs.push('reject: ' + ((e.reason && e.reason.message) || e.reason)); });
 </script>
 <script type="importmap">
-{ "imports": { "three": "./vendor/three.module.js" } }
+{ "imports": { "three": "./vendor/three.module.js?v=5" } }
 </script>
 </head>
 <body>
@@ -108,6 +108,6 @@
     <p>请横屏握持手机</p>
   </div>
 </div>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>

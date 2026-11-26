@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CELL, WALL_H, cellToWorld, isWall, openCells } from './maze.js';
+import { CELL, WALL_H, cellToWorld, isWall, openCells } from './maze.js?v=5';
 
 function noiseCanvas(size, base, specks, opacity) {
   const cv = document.createElement('canvas');

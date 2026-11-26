@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { bfsPath, cellToWorld, hasLineOfSight, worldToCell, openCells, CELL } from './maze.js';
+import { bfsPath, cellToWorld, hasLineOfSight, worldToCell, openCells, CELL } from './maze.js?v=5';
 
 export class Monster {
   constructor(scene, maze, rand) {
