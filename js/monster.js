@@ -112,15 +112,24 @@ export class Monster {
     return [c.c, c.r];
   }
 
-  pickPatrolTarget() {
+  pickPatrolTarget(player) {
     const cells = openCells(this.maze);
-    const [c, r] = cells[(this.rand() * cells.length) | 0];
-    return [c, r];
+    // 大部分时候在玩家附近游荡，偶尔远处重新布点——这样既像在找你，又不会贴脸
+    if (player && this.rand() < 0.62) {
+      const near = [];
+      for (const cell of cells) {
+        const w = cellToWorld(this.maze, cell[0], cell[1]);
+        const d = Math.hypot(w.x - player.pos.x, w.z - player.pos.z);
+        if (d > 5 && d < 14) near.push(cell);
+      }
+      if (near.length) return near[(this.rand() * near.length) | 0];
+    }
+    return cells[(this.rand() * cells.length) | 0];
   }
 
   canSee(player) {
     const d = this.pos.distanceTo(player.pos);
-    if (d > 9.5) return false;
+    if (d > 11) return false;
     const dc = worldToCell(this.maze, this.pos.x, this.pos.z);
     const pc = worldToCell(this.maze, player.pos.x, player.pos.z);
     return hasLineOfSight(this.maze, [dc.c, dc.r], [pc.c, pc.r]);
@@ -128,8 +137,8 @@ export class Monster {
 
   hears(player) {
     const d = this.pos.distanceTo(player.pos);
-    if (d > 15) return false;
-    return player.sprinting || (d < 5.5 && Math.hypot(player.vel.x, player.vel.z) > 1.2);
+    if (d > 16) return false;
+    return player.sprinting || (d < 7 && Math.hypot(player.vel.x, player.vel.z) > 1.2);
   }
 
   update(dt, player, t) {
@@ -169,13 +178,13 @@ export class Monster {
     if (this.state === 'hunt') {
       target = worldToCell(this.maze, player.pos.x, player.pos.z);
       target = [target.c, target.r];
-      this.speed = 2.9 + this.speedBonus;
+      this.speed = 3.05 + this.speedBonus;
     } else if (this.state === 'search' && this.lastSeen) {
       const tc = worldToCell(this.maze, this.lastSeen.x, this.lastSeen.z);
       target = [tc.c, tc.r];
       this.speed = 2.15 + this.speedBonus * 0.5;
     } else {
-      if (!this.patrolTarget) this.patrolTarget = this.pickPatrolTarget();
+      if (!this.patrolTarget) this.patrolTarget = this.pickPatrolTarget(player);
       target = this.patrolTarget;
       this.speed = 1.25 + this.speedBonus * 0.3;
     }
@@ -191,7 +200,7 @@ export class Monster {
         this.pathIdx = 1;
       }
       this.repathT = this.state === 'hunt' ? 0.35 : 0.9;
-      if (this.state === 'patrol' && (!p || p.length <= 1)) this.patrolTarget = this.pickPatrolTarget();
+      if (this.state === 'patrol' && (!p || p.length <= 1)) this.patrolTarget = this.pickPatrolTarget(player);
     }
 
     // —— 沿路径移动 ——

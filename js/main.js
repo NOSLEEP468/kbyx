@@ -262,6 +262,41 @@ function win() {
   if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
 }
 
+// ---------------- 重置 / 退出 ----------------
+function resetRun() {
+  elapsed = 0; deaths = 0; candlesTaken = 0; tension = 0;
+  for (const c of world.candles) {
+    c.taken = false;
+    c.group.visible = true;
+    c.light.intensity = 3.2;
+  }
+  world.exit.unlocked = false;
+  document.querySelectorAll('.candle').forEach(el => el.classList.remove('lit'));
+  $('objective').textContent = '找到三支蜡烛';
+  $('stamina').style.width = '100%';
+  $('stamina').classList.remove('low');
+  player.respawn(startPos, startYaw);
+  monster.spawnFarFrom(startPos, 15);
+  monster.setDifficulty(0);
+  monster.patrolTarget = null;
+  monster.lastSeen = null;
+  audio.setTension(0);
+}
+
+function exitGame() {
+  resetRun();
+  joyEnd();
+  look.active = false; look.id = null;
+  input.moveX = 0; input.moveY = 0; input.sprint = false; runHeld = false;
+  state = 'title';
+  setScreen('title');
+  hud.classList.add('hidden');
+  $('joystick').classList.add('hidden');
+  $('compass').classList.add('hidden');
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+}
+
 // ---------------- 暂停 ----------------
 let pausedFrom = null;
 function pause() {
@@ -282,7 +317,15 @@ function resume() {
 
 $('btn-pause').addEventListener('click', (e) => { e.stopPropagation(); pause(); });
 $('btn-resume').addEventListener('click', resume);
-$('btn-restart').addEventListener('click', () => location.reload());
+$('btn-restart').addEventListener('click', () => {
+  resetRun();
+  state = 'playing';
+  setScreen(null);
+  hud.classList.remove('hidden');
+  $('joystick').classList.remove('hidden');
+  last = performance.now();
+});
+$('btn-exit').addEventListener('click', (e) => { e.stopPropagation(); exitGame(); });
 $('btn-sound').addEventListener('click', () => {
   audio.setMuted(!audio.muted);
   $('btn-sound').textContent = '声音：' + (audio.muted ? '关' : '开');
@@ -311,6 +354,13 @@ function buildWorldOnce(seed) {
   monster = new Monster(scene, maze, rand);
   monster.spawnFarFrom(startPos, 15);
   monster.onStep = (dist, hunting) => audio.monsterStep(dist, hunting);
+  monster.onSpot = () => {
+    audio.stinger();
+    toast('它 发 现 你 了', 2000);
+    $('flash').classList.add('on');
+    setTimeout(() => $('flash').classList.remove('on'), 200);
+    if (navigator.vibrate) { try { navigator.vibrate(40); } catch (e) {} }
+  };
 
   // 环境光（很低，主要靠手电）
   const amb = new THREE.AmbientLight(0x2a3346, 0.5);
